@@ -1,5 +1,6 @@
 %% load the data
-path_to_data = "project_sharepoint/Data/2023/Pressure_data/";
+% path_to_data = "project_sharepoint/Data/2023/Pressure_data/";
+path_to_data = "test_data/";
 
 test_fn = "machWAM2_Cube_20230615_153801.txt";
 bg_fn = "ref_20230616_134420.txt";
