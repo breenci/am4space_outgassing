@@ -11,23 +11,23 @@ bg_data = import_OG_file(strcat(path_to_data, bg_fn));
 
 %% Trim to ROI
 sampling_rate = test_data.Datetime(2) - test_data.Datetime(1);
-min_search_duration = minutes(20);
-test_duration = hours(18);
-
+min_search_duration = minutes(20); % look for valve close in this time
+test_duration = hours(18); % length of test
 
 % Find start
-% min search
+% Search for the minimum which corresponds to the valves being closed
 search_idx = floor(min_search_duration/sampling_rate);
 [~, test_min_idx] = min(test_data.CH2(1:search_idx));
 [~, bg_min_idx] = min(bg_data.CH2(1:search_idx));
 
+% Start index is at the peak pressure after valve closed
 [~, test_max_idx] = max(test_data.CH2(test_min_idx:end));
 [~, bg_max_idx] = max(bg_data.CH2(bg_min_idx:end));
 
 test_start_idx = test_min_idx + test_max_idx;
 bg_start_idx = bg_min_idx + bg_max_idx;
 
-% define end
+% define end point from duration and sampling rate
 test_end_idx = test_start_idx + floor(test_duration/sampling_rate);
 bg_end_idx = bg_start_idx + floor(test_duration/sampling_rate);
 
