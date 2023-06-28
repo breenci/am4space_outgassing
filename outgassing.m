@@ -61,7 +61,7 @@ grid on
 
 %% Get mean temperature
 full_T_test = trim_test_data(:,5:12);
-mean_T_test = mean(table2array(full_T_test), 2);
+mean_T_test = mean(table2array(full_T_test), 2) + 270; %add 270 for kelvin
 %% define constants
 orf_d = 0.75e-3; % orifice diameter (m)
 orf_t = 1e-3; % orifice thickness (m)
@@ -112,7 +112,7 @@ plot(t, q, 'LineWidth', 2)
 hold off
 ax=gca;
 ax.FontSize = 16;
-ylim([0 2e-5])
+ylim([0 1e-4])
 xlim([0 15])
 ylabel('Outgassing Rate (Pa m s^{-1})', 'FontSize', 16)
 xlabel('Time (hrs)', 'FontSize', 16)
