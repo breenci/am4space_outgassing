@@ -5,16 +5,16 @@ path_to_data = "project_sharepoint/Data/2023/Pressure_data/";
 % path_to_data = "test_data/";
 
 % File names for test and background measurements
-test_fn = "20230823_145035_bulk_al_3_Cube.txt";
-bg_fn = "20230822_161919_ref.txt";
+test_fn = "20230629_150810_WAAM3_Cube.txt";
+bg_fn = "20230630_141508_ref.txt";
 
 test_fn_str = strrep(test_fn,'_', ' ');
 bg_fn_str = strrep(bg_fn,'_', ' ');
 
 sample_str = 'WAAM Mach Al 02 Cube - 8th Aug 2023 data';
-sample = '_bulk_Al_03';
+sample = '_WAAM_Al_03';
 
-sample_type = 1;
+sample_type = 2;
 
 %sample_type == 1 / A = 9707.6 * 1e-6 / Surface area of machined bulk cube 
 %sample_type == 2 / A = 8243.1 * 1e-6 / WAAM mach cube box
@@ -255,7 +255,7 @@ hr10 = qhr(2);
 % save file with appropriate name. Date + sample name
 char_fn = char(test_fn);
 date = char_fn(1:15); % get date from input file
-save(['project_sharepoint/Data/2023/SPIE_paper_data/', date, sample, '.mat'], 'q', 'hr1', 'hr10', 'sample_type')
+save(['project_sharepoint/Data/2023/SPIE_paper_data/run1/', date, sample, '.mat'], 'q', 'hr1', 'hr10', 'sample_type')
 
 %% Plotting
 figure(6)

@@ -1,41 +1,109 @@
+clear all
+close all
 % Specify path to processed data
 path_to_data = "project_sharepoint/Data/2023/SPIE_paper_data/";
 
+% two runs
+run1_path = strcat(path_to_data, 'run1/');
+run2_path = strcat(path_to_data, 'run2/');
+
+% colors for plotting
+colors = ["r" "b" "g" "c" "m" "#D95319" "k" "#7E2F8E" "#77AC30" "#A2142F"];
+
 % Specify the file names
-files = ["20230802_125602_bulk_Al_02.mat", "20230823_145035_bulk_Al_03", ...
-    "20230808_111950_WAAM_Al_02", "20230809_114631_WAAM_Al_03", "20230811_180057_WAAM_Al_05" ...
-    "20230814_173903_WAAM_Al_06", "20230815_152852_WAAM_Al_07", "20230803_131526_WAAM_Al_01"];
+file_struct1 = dir(strcat(run1_path, '*.mat'));
+
+files1 = {file_struct1.name};
 % Labels for the plot legend
-labels = ["Bulk Al. #2", "Bulk Al. #3", "WAAM #1 (Machined)", "WAAM #2 (Machined)", "WAAM #3 (Machined)", ...
-    "WAAM #5 (Raw)", "WAAM #6 (Raw)", "WAAM #7 (Raw)"];
 
 sampling_rate = 5;
+
 % Do the plotting
+% slightly overkill but for a one off plot
 fig = figure(1);
-for i = 1:length(files)
+tiledlayout(2,1, 'Padding', 'none', 'TileSpacing', 'compact'); 
+nexttile
+for i = 1:length(files1)
     % Load the data
-    file_data = load(strcat(path_to_data, files(i)));
+    fn = files1{i};
+    file_data = load(strcat(run1_path, fn));
     % calculate duration of test in hrs
     time = sampling_rate * (1:length(file_data.q));
     time_hrs = time./(60*60);
-    % plot the data with different markers
+    sample_no = fn(end-4);
+    % plot the data with different markers and colors
+    % associate colors to sample names for consistency between measurements
     if file_data.sample_type == 1
-        plot(time_hrs, file_data.q, 'DisplayName', labels(i), 'LineStyle', ...
-            '-', 'LineWidth', 1);
+        sample_name = strcat("Bulk Al Cube #", sample_no);
+        sample_idx = str2num(sample_no);
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, 'LineStyle', ...
+            '-', 'LineWidth', 1, 'Color', colors(sample_idx));
     elseif file_data.sample_type == 2
-        plot(time_hrs, file_data.q, 'DisplayName', labels(i), 'LineStyle', ...
-            '--', 'LineWidth', 1);
+        sample_idx = str2num(sample_no);
+        sample_name = strcat("WAAM #", sample_no, ' (machined)');        
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, 'LineStyle', ...
+            '-', 'LineWidth', 1, 'Marker', 'o', 'MarkerIndices', 100:500:length(time_hrs), ...
+            'Color', colors(sample_idx+3));
     elseif file_data.sample_type == 3
-        plot(time_hrs, file_data.q, 'DisplayName', labels(i), 'LineStyle', ...
-            ':', 'LineWidth', 1);
+        sample_idx = str2num(sample_no);
+        sample_name = strcat("WAAM #", sample_no, ' (non-machined)');        
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, 'LineStyle', ...
+            '-', 'LineWidth', 1, 'Marker', '*', 'MarkerIndices', 100:500:length(time_hrs),...
+            'Color', colors(sample_idx+2));
     end
     % Print the OG rates at 1hr and 10hrs
-    disp([labels(i),file_data.hr1, file_data.hr10])
+    disp(["Run 1",sample_name,file_data.hr1, file_data.hr10])
+    hold on
+end
+
+
+% Some plotting parameters
+set(gca, 'YScale', 'log', 'FontSize', 16)
+% legend('FontSize', 16)
+ylabel("Outgassing Rate (Pa m s^{-1})", 'Fontsize', 24)
+grid on
+% xline([1,10], '--', {'1HR', '10HR'}, 'LineWidth', 2)
+xticks(0:1:15)
+
+% Repeat for run 2
+% Specify the file names
+file_struct2 = dir(strcat(run2_path, '*.mat'));
+files2 = {file_struct2.name};
+nexttile
+for i = 1:length(files2)
+    % Load the data
+    fn = files2{i};
+    file_data = load(strcat(run2_path, fn));
+    % calculate duration of test in hrs
+    time = sampling_rate * (1:length(file_data.q));
+    time_hrs = time./(60*60);
+    sample_no = fn(end-4);
+    % plot the data with different markers
+    if file_data.sample_type == 1
+        sample_name = strcat("Bulk Al Cube #", sample_no);
+        sample_idx = str2num(sample_no);
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, 'LineStyle', ...
+            '-', 'LineWidth', 1, 'Color', colors(sample_idx));
+    elseif file_data.sample_type == 2
+        sample_idx = str2num(sample_no);
+        sample_name = strcat("WAAM #", sample_no, ' (machined)');        
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, 'LineStyle', ...
+            '-', 'LineWidth', 1, 'Marker', 'o', 'MarkerIndices', 100:500:length(time_hrs), ...
+            'Color', colors(sample_idx+3));
+    elseif file_data.sample_type == 3
+        sample_idx = str2num(sample_no);
+        sample_name = strcat("WAAM #", sample_no, ' (non-machined)');        
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, 'LineStyle', ...
+            '-', 'LineWidth', 1, 'Marker', '*', 'MarkerIndices', 100:500:length(time_hrs),...
+            'Color', colors(sample_idx+2));
+    end
+    % Print the OG rates at 1hr and 10hrs
+    disp(["Run 2", sample_name ,file_data.hr1, file_data.hr10])
     hold on
 end
 % Some plotting parameters
 set(gca, 'YScale', 'log', 'FontSize', 16)
-legend('FontSize', 16)
+legend('FontSize', 12, 'Location', 'southeast')
 ylabel("Outgassing Rate (Pa m s^{-1})", 'Fontsize', 24)
 xlabel("Time (hrs)", 'FontSize', 24)
 % xline([1,10], '--', {'1HR', '10HR'}, 'LineWidth', 2)
