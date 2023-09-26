@@ -1,7 +1,7 @@
 clear all
 close all
 % Specify path to processed data
-path_to_data = "project_sharepoint/Data/2023/SPIE_paper_data/";
+path_to_data = "project_sharepoint/Data/2023/SPIE_paper_data/processed/";
 
 % two runs
 run1_path = strcat(path_to_data, 'run1/');
@@ -52,7 +52,7 @@ for i = 1:length(file_names)
         set(gca, 'YScale', 'log', 'FontSize', 16)
         ylabel("Outgassing Rate (Pa m s^{-1})", 'Fontsize', 24)
         grid on
-        legend('FontSize', 12, 'Location', 'southeast') % legend for both plots
+        legend('FontSize', 14, 'Location', 'southeast') % legend for both plots
         ylim([1e-10 1e-3]) 
         xticks(0:1:15)
     end
@@ -69,7 +69,7 @@ for i = 1:length(file_names)
                 " (machined)");
             plot(time_hrs, file_data.q, 'DisplayName', sample_name, ...
                 'Color', colors(file_data.sample_no), ... 
-                    'Marker', '*', 'MarkerIndices', 100:500:length(time_hrs));
+                    'Marker', '*', 'MarkerSize', 12, 'MarkerIndices', 100:500:length(time_hrs));
         else
             sample_name = strcat("WAAM #", num2str(file_data.sample_no), ...
                     " (non-machined)");
@@ -78,11 +78,15 @@ for i = 1:length(file_names)
                     'Marker', 'o', 'MarkerIndices', 100:500:length(time_hrs));
         end
     elseif file_data.sample_mat == "bulk"
+        nexttile(2)
         sample_name = strcat("Bulk #", num2str(file_data.sample_no), ...
                     " (machined)");
         plot(time_hrs, file_data.q, 'DisplayName', sample_name, ...
                     'Color', colors(file_data.sample_no));
-    hold off
+        nexttile(1)
+        plot(time_hrs, file_data.q, 'DisplayName', sample_name, ...
+                    'Color', [.5 .5 .5]);
+
 
     end
     % Save OG rates
@@ -92,7 +96,7 @@ for i = 1:length(file_names)
     OG_10hr = [OG_10hr; file_data.hr10];
                 
 end
-
+hold off
 % Get the average OG rate for WAAM samples
 % NOTE: bulk samples were only taken in run 1 so these are not averaged 
 OG_table = table(mats, ids, OG_1hr, OG_10hr);
