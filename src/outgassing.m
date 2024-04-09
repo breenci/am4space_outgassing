@@ -1,291 +1,183 @@
+% Script created by CB based on previous OG calculation script
 clear all
 close all
-%% load the data
-path_to_data = "project_sharepoint/Data/2023/Pressure_data/";
-% path_to_data = "test_data/";
+%% Load the data
+path_to_data = "../OG_data/analysis_code_test_data/";
 
-% File names for test and background measurements
-test_fn = '20230823_145035_bulk3_Cube.txt';
-bg_fn = '20230822_161919_ref.txt';
+bg_fn = "20240219_094406_REF"; % background measurement
+sample_fn = "20240220_090720_SICAPRINT-01-LATTICE_CB"; % sample measurement
 
-test_fn_str = strrep(test_fn,'_', ' ');
-bg_fn_str = strrep(bg_fn,'_', ' ');
+% load data from file
+bg = import_OG_file(strcat(path_to_data, bg_fn));
+sample = import_OG_file(strcat(path_to_data, sample_fn));
 
-sample_str = 'WAAM Mach Al 02 Cube - 8th Aug 2023 data';
-pattern = '\_(\w{4})(\d{1})\_';
-extracted_vars = regexp(test_fn, pattern, 'tokens');
-sample_mat = extracted_vars{1}{1};
-sample_no = str2num(extracted_vars{1}{2});
+% metadata
+% TODO: Parse reference?
+sample_info = parse_filename(sample_fn);
 
-sample = strcat('_', sample_mat, num2str(sample_no));
-
-if sample_mat == "WAAM"
-    if any(sample_no == [1 2 3])
-        sample_type = 2;
-    elseif any(sample_no == [5 6 7])
-        sample_type = 3;
-    end
-elseif sample_mat == "bulk"
-    sample_type = 1;
-end
-
-%sample_type == 1 / A = 9707.6 * 1e-6 / Surface area of machined bulk cube 
-%sample_type == 2 / A = 8243.1 * 1e-6 / WAAM mach cube box
-%sample_type == 3 / A = 7832.9 * 1e-6 / WAAM cube hollow 
-
-% Load the files
-test_data = import_OG_file(strcat(path_to_data, test_fn));
-bg_data = import_OG_file(strcat(path_to_data, bg_fn));
-
-%% Raw data
-figure(1)
-subplot(2,1,1)
-hold all
-plot(bg_data.CH2)
-plot(bg_data.CH3)
-hold off
-title(bg_fn_str, 'FontSize', 16)
-box on
-grid on
-
-% Temperature plot
-subplot(2,1,2)
-hold all
-plot(bg_data.T1)
-plot(bg_data.T2)
-plot(bg_data.T3)
-plot(bg_data.T4)
-plot(bg_data.T5)
-plot(bg_data.T6)
-plot(bg_data.T7)
-plot(bg_data.T8)
-plot(bg_data.T9)
-hold off
-title(bg_fn_str, 'FontSize', 16)
-box on
-grid on
-
-figure(2)
-subplot(2,1,1)
-hold all
-plot(test_data.CH2)
-plot(test_data.CH3)
-hold off
-title(test_fn_str, 'FontSize', 16)
-box on
-grid on
-
-subplot(2,1,2)
-hold all
-plot(test_data.T1)
-plot(test_data.T2)
-plot(test_data.T3)
-plot(test_data.T4)
-plot(test_data.T5)
-plot(test_data.T6)
-plot(test_data.T7)
-plot(test_data.T8)
-plot(test_data.T9)
-hold off
-title(test_fn_str, 'FontSize', 16)
-box on
-grid on
-
-%% Trim to ROI
-sampling_rate = mean(diff(test_data.Datetime));
-min_search_duration = minutes(30); % look for valve close in this time
-test_end_cut = 19;
-test_duration = hours(18); % length of test
-time = 0:seconds(sampling_rate):(size(test_data, 1)-1).*seconds(sampling_rate); %seconds
-timehr = time./(60.*60); % time in hours
-timehr = timehr';
-Tindex = (timehr > test_end_cut);
-
-test_data_old = test_data;
-bg_data_old = bg_data;
-
-test_data(Tindex,:) = [];
-bg_data(Tindex,:) = [];
-
-% Find start
-% Search for the minimum which corresponds to the valves being closed
-search_idx = floor(min_search_duration/sampling_rate);
-[~, test_min_idx] = min(test_data.CH2(1:search_idx));
-[~, bg_min_idx] = min(bg_data.CH2(1:search_idx));
-
-figure(1)
-subplot(2,1,1)
-hold all
-plot(bg_data.CH2(bg_min_idx:end))
-plot(bg_data.CH3(bg_min_idx:end))
-hold off
-
-figure(2)
-subplot(2,1,1)
-hold all
-plot(test_data.CH2(test_min_idx:end))
-plot(test_data.CH3(test_min_idx:end))
-hold off
-
-% Stop the test at 15 hours for future analysis
-time_stop = 15; %hours
-time_new = 0:seconds(sampling_rate):(size(test_data, 1)-1).*seconds(sampling_rate); %seconds
-timehr_new = time_new./(60.*60);
-timehr_new = timehr_new';
-TindexN = (timehr_new > time_stop);
-
-Tstop = (time_stop.*60.*60)./seconds(sampling_rate);
-
-Ttrimb = hours(bg_data.Datetime(bg_min_idx:Tstop+bg_min_idx) - bg_data.Datetime(1));
-Ttrims = hours(test_data.Datetime(test_min_idx:Tstop+test_min_idx) - test_data.Datetime(1));
-Ttrim = mean([Ttrimb, Ttrims], 2);
-
-figure(3)
-subplot(2,1,1)
-hold all
-plot(Ttrim, bg_data.CH2(bg_min_idx:Tstop+bg_min_idx), 'k')
-plot(Ttrim, bg_data.CH3(bg_min_idx:Tstop+bg_min_idx), 'k')
-plot(Ttrim, test_data.CH2(test_min_idx:Tstop+test_min_idx), 'b')
-plot(Ttrim, test_data.CH3(test_min_idx:Tstop+test_min_idx), 'b')
-hold off
-xlabel('hours')
-box on
-grid on
-legend('bg', 'bg', 'test', 'test')
-
-subplot(2,1,2)
-hold all
-plot(Ttrim, bg_data.CH2(bg_min_idx:Tstop+bg_min_idx), 'k')
-plot(Ttrim, bg_data.CH3(bg_min_idx:Tstop+bg_min_idx), 'k')
-plot(Ttrim, test_data.CH2(test_min_idx:Tstop+test_min_idx), 'b')
-plot(Ttrim, test_data.CH3(test_min_idx:Tstop+test_min_idx), 'b')
-hold off
-xlabel('hours')
-box on
-grid on
-xlim([0 1])
-legend('bg', 'bg', 'test', 'test')
-
-%%
-% trim data
-trim_test_data = test_data(test_min_idx:Tstop+test_min_idx, :);
-trim_bg_data = bg_data(bg_min_idx:Tstop+bg_min_idx, :);
-
-%%
-% Also multiply by 100 for mbar to Pa conversion
-test_sample = trim_test_data.CH2 .* 100;
-test_ref = trim_test_data.CH3 .*100;
-
-bg_sample = trim_bg_data.CH2 .* 100;
-bg_ref = trim_bg_data.CH3 .* 100;
-
-% Use this figure to find appropriate start buffer
-figure(4)
-tiledlayout(2,1)
+% plot the raw data
+figure(1);
+raw_ax = tiledlayout(2, 1);
 nexttile
-hold all
-plot(Ttrim,bg_sample)
+plot(sample.Datetime, sample.CH2, "DisplayName", "Sample")
+hold on
+plot(sample.Datetime, sample.CH3, "DisplayName", "Background")
 hold off
-title('Background')
+title(strcat("Raw Data: ", sample_info.sample.name, " #", ...
+    string(sample_info.sample.id)))
 grid on
-box on 
-xlim([-0.1 1])
+legend()
+ylabel("Pressure (mbar)")
+xlabel("Datetime")
+ylim([1e-6, 1e-3])
 nexttile
-hold all
-plot(Ttrim, test_sample)
+plot(sample.Datetime, sample.T1)
+hold on
+plot(sample.Datetime, sample.T2)
+plot(sample.Datetime, sample.T3)
+plot(sample.Datetime, sample.T4)
+plot(sample.Datetime, sample.T5)
+plot(sample.Datetime, sample.T6)
+plot(sample.Datetime, sample.T7)
+plot(sample.Datetime, sample.T8)
+plot(sample.Datetime, sample.T9)
 hold off
-title('Sample')
 grid on
-box on
-xlim([-0.1 1])
+ylabel("Temperature (\circC)")
+xlabel("Datetime")
+fontsize(16, "points")
 
-%% Get mean temperature
-full_T_test = trim_test_data(:,5:12); %starts at 5 as T1 is controller temp sensor
-mean_T_test = mean(table2array(full_T_test), 2) + 270; %add 270 for kelvin - a vector the same size as time
-%% define constants
+
+
+%% Find start point
+% start when valves closed in reference chamber
+% Assumption: Valves close at the same time!
+% TODO: Change this into a function
+
+% convert to duraction
+sample_dur = sample.Datetime - sample.Datetime(1);
+% search for a minimum in the first 30 mins
+% after valve is opened the pressure increases 
+search_t = minutes(30);
+search_CH3 = sample.CH3(sample_dur < search_t);
+
+% trim to set time (15 hours)
+t_diff = diff(sample_dur);
+mean_diff = mean(t_diff);
+max_t = hours(15);
+max_idx = floor(max_t/mean_diff);
+
+[~,start_CH3] = min(search_CH3);
+
+% trim to region of interest (ROI)
+sample_ROI = sample.CH2(start_CH3:start_CH3+max_idx);
+ref_ROI = sample.CH3(start_CH3:start_CH3+max_idx);
+dur_ROI = sample_dur(start_CH3:start_CH3+max_idx) - sample_dur(start_CH3);
+
+% mbar to Pa
+sample_ROI = sample_ROI .* 100;
+ref_ROI = ref_ROI .* 100;
+
+% plot the trimmed data
+figure(2)
+plot(dur_ROI, sample_ROI, "DisplayName", "Sample")
+hold on
+plot(dur_ROI, ref_ROI, "DisplayName", "Reference")
+hold off
+title(strcat("Trimmed Data: ", sample_info.sample.name, " #", ...
+    string(sample_info.sample.id)))
+grid on
+legend()
+ylabel("Pressure (Pa)")
+xlabel("Datetime")
+ylim([1e-4, 1e-1])
+
+%% Conductance Calculation
+% get temperature
+% starts at 5 as T1 is controller temp sensor
+T_ROI = sample(start_CH3:start_CH3+max_idx,5:12);
+% add 270 for kelvin - a vector the same size as time
+mean_T_test = mean(table2array(T_ROI), 2) + 270;
+
+% define constants
 orf_d = 0.75e-3; % orifice diameter (m)
 orf_t = 1e-3; % orifice thickness (m)
-% temp = 293; % chamber temp (K) (approx. for now)
 M = 0.02896; % Mean molecular mass (kg / mol) (dry air for now)
 R = 8.3145; % Gas constant (J / K * mol)
 
-% Sample geometries have different surface areas
-if sample_type == 1
-A = 9707.6 * 1e-6; % Surface area of machined bulk cube 
-Sstr = 'Surface area = bulk machined cube (9707.6 * 1e-6)';
-elseif sample_type == 2
-A = 8243.1 * 1e-6; % WAAM mach cube box
-Sstr = 'Surface area = WAAM machined cube (8243.1 * 1e-6)';
-elseif sample_type == 3
-A = 7832.9 * 1e-6; % WAAM cube hollow 
-Sstr = 'Surface area = WAAM raw cube (7832.9 * 1e-6)';
-else
-    disp('error');
-    return
-end
-%% Outgassing calculation
 C = concalc_rough(orf_d, orf_t, mean_T_test, M, R); % conductance calc
-back_coeff = polyfit(bg_ref, bg_sample, 3); % coefficients from background fit
-backx = [0:max(bg_ref)./100:max(bg_ref)];
+%% Background Correction
+% load background and convert to pascal
+% TODO: Trim this data
+bg_ref = bg.CH3(start_CH3:start_CH3+max_idx) .* 100;
+bg_sample = bg.CH2(start_CH3:start_CH3+max_idx) .* 100;
+bg_date = bg.Datetime(start_CH3:start_CH3+max_idx);
 
-figure(5)
-hold all
+figure(3)
+plot(bg_date, bg_sample, "DisplayName", "Sample Chamber")
+hold on
+plot(bg_date, bg_ref, "DisplayName", "Reference Chamber")
+hold off
+title(strcat("Background Data"))
+grid on
+legend()
+ylabel("Pressure (Pa)")
+xlabel("Datetime")
+ylim([1e-3, 1e-1])
+
+% coefficients from background fit
+back_coeff = polyfit(bg_ref, bg_sample, 3); 
+corr_ref = back_coeff(1)*ref_ROI.^3 + back_coeff(2)*ref_ROI.^2 + ...
+    back_coeff(3)*ref_ROI + back_coeff(4);
+
+% plot the correction fit
+backx = 0:max(bg_ref)/100:max(bg_ref);
+
+figure(4)
+hold on
 plot(bg_ref, bg_sample, '.')
 plot(backx, polyval(back_coeff,backx))
 hold off
 axis equal
 grid on 
 box on
-xlabel('[bg ref]')
-ylabel('[bg sample]')
+xlabel('bg ref')
+ylabel('bg sample')
 title('background correction fitting')
 
-% do background correction
-corr_ref = back_coeff(1)*test_ref.^3 + back_coeff(2)*test_ref.^2 + back_coeff(3)*test_ref + back_coeff(4);
+%% Outgassing Calculation
+% surface area
+% TODO: Library of Areas
+A = 18054.0 * 1e-6;
+q = C.*(sample_ROI - corr_ref)/A;
 
-% calculate outgassing rate
-q = C.*(test_sample - corr_ref)/A;
-t = hours(trim_test_data.Datetime - trim_test_data.Datetime(1));
+% outgassing rates at 1hr and 10hrs
+[~, idx_1hr] = min(abs(dur_ROI - hours(1)));
+[~, idx_10hr] = min(abs(dur_ROI - hours(10)));
+q_1hr = q(idx_1hr);
+q_10hr = q(idx_10hr);
 
-%% q at 1hr and 10hr
-t_min = t;
-t_min = round(t_min.*180)./180; % getting an average over 20 secs
+disp(['Sample Name: ', char(sample_info.sample.name)])
+disp(['Sample ID: ', num2str(sample_info.sample.id)])
+disp(['Measured on ', char(string(sample_info.datetime, "uuuu-MM-dd")), ...
+    ' by ', char(sample_info.operator)])
+disp(['Outgassing rate at 1hr = ', num2str(q_1hr), ' [Pa m s^{-1}]']);
+disp(['Outgassing rate at 10hr = ', num2str(q_10hr), ' [Pa m s^{-1}]']);
 
-index1 = (t_min == 1) ;
-index2 = (t_min == 10);
-qhr = [mean(q(index1)), mean(q(index2))];
-
-disp(join(['Background = ', bg_fn]));
-disp(join(['Sample = ', test_fn]));
-disp(sample_str);
-disp(Sstr);
-disp(['Outgassing rate at 1hr = ', num2str(qhr(1)), ' [Pa m s^-^1]']);
-disp(['Outgassing rate at 10hr = ', num2str(qhr(2)), ' [Pa m s^-^1]']);
-
-hr1 = qhr(1);
-hr10 = qhr(2);
-
-% save file with appropriate name. Date + sample name
-char_fn = char(test_fn);
-date = char_fn(1:15); % get date from input file
-save(['project_sharepoint/Data/2023/SPIE_paper_data/run2/', date, sample, '.mat'] ...
-    ,'q', 'hr1', 'hr10', 'sample_mat', 'sample_no')
-
-%% Plotting
-figure(6)
-hold all
-plot(t, q, 'LineWidth', 2)
-%plot([1 10], qhr, 'o', 'MarkerSize',5, 'MarkerFaceColor','k', 'MarkerEdgeColor','k')
-plot([1 1], [1 0], ':k')
-plot([10 10], [1 0], ':k')
-hold off
-ax=gca;
-ax.FontSize = 16;
-ylim([0 1e-4])
-xlim([0 time_stop])
-ylabel('Outgassing Rate (Pa m s^{-1})', 'FontSize', 16)
-xlabel('Time (hrs)', 'FontSize', 16)
-title(sample_str, 'FontSize', 16, 'FontWeight', 'bold')
+% Plotting
+figure(5)
+plot(dur_ROI, q, "DisplayName", "Outgassing Rate")
+hold on
+scatter(dur_ROI(idx_10hr), q_10hr, "red", "filled")
+scatter(dur_ROI(idx_1hr), q_1hr, "red", "filled")
+xline(dur_ROI(idx_10hr), ':k')
+xline(dur_ROI(idx_1hr), ':k')
+ylim([0, 1e-5])
 grid on
-box on 
+hold off
+%% create the ouput file
+output_struct = struct("q", q, "sample", sample_info.sample, ...
+    "sample_fn", sample_fn, "reference_fn", bg_fn);
 
+path_to_output = "../dproject_sharepoint/Data/processed/analysis_testing/";
+% save(strcat(path_to_output, sample_fn, "_OGR.mat"))
