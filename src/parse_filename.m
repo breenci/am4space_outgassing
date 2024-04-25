@@ -1,7 +1,10 @@
 function fn_struct = parse_filename(fn, mode)
 % PARSE_FILENAME Extract measurement information from filename
-%   fn_struct = PARSE_FILENAME(fn) extracts info from filename string and
-%   returns a structure cotaining the relevent information
+%   fn_struct = PARSE_FILENAME(fn, mode) extracts info from filename string
+% (fn) and returns a structure cotaining the relevent information.
+% 
+% Can operate on a sample file (mode = "sample") or a background file
+% (mode = "background).
 
 % split the filename to extract information
 info_arr = split(fn, '_');
