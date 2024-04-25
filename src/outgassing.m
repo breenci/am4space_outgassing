@@ -1,10 +1,10 @@
 % Script created by CB based on previous OG calculation script
-clear all
+clear variables
 close all
 %% Load the data
 path_to_data = "../OG_data/analysis_code_test_data/";
 
-bg_fn = "20240219_094406_REF"; % background measurement
+bg_fn = "20240219_094406_REF_CB"; % background measurement
 sample_fn = "20240220_090720_SICAPRINT-01-LATTICE_CB"; % sample measurement
 
 % load data from file
@@ -12,8 +12,8 @@ bg = import_OG_file(strcat(path_to_data, bg_fn));
 sample = import_OG_file(strcat(path_to_data, sample_fn));
 
 % metadata
-% TODO: Parse reference?
-sample_info = parse_filename(sample_fn);
+sample_info = parse_filename(sample_fn, "sample");
+bg_info = parse_filename(bg_fn, "background");
 
 % plot the raw data
 figure(1);
@@ -159,8 +159,10 @@ q_10hr = q(idx_10hr);
 
 disp(['Sample Name: ', char(sample_info.sample.name)])
 disp(['Sample ID: ', num2str(sample_info.sample.id)])
-disp(['Measured on ', char(string(sample_info.datetime, "uuuu-MM-dd")), ...
-    ' by ', char(sample_info.operator)])
+disp(['Sample measured on ', char(string(sample_info.datetime, ...
+    "uuuu-MM-dd")), ' by ', char(sample_info.operator)])
+disp(['Background measured on ', char(string(bg_info.datetime, ...
+    "uuuu-MM-dd")), ' by ', char(bg_info.operator)])
 disp(['Outgassing rate at 1hr = ', num2str(q_1hr), ' [Pa m s^{-1}]']);
 disp(['Outgassing rate at 10hr = ', num2str(q_10hr), ' [Pa m s^{-1}]']);
 
