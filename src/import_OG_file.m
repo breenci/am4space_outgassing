@@ -23,15 +23,15 @@ if nargin < 2
 end
 
 %% Set up the Import Options and import the data
-opts = delimitedTextImportOptions("NumVariables", 12);
+opts = delimitedTextImportOptions("NumVariables", 13);
 
 % Specify range and delimiter
 opts.DataLines = dataLines;
 opts.Delimiter = ",";
 
 % Specify column names and types
-opts.VariableNames = ["Datetime", "CH2", "CH3", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"];
-opts.VariableTypes = ["datetime", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"];
+opts.VariableNames = ["Datetime", "CH1", "CH2", "CH3", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"];
+opts.VariableTypes = ["datetime", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"];
 
 % Specify file level properties
 opts.ExtraColumnsRule = "ignore";
