@@ -22,4 +22,23 @@ Outgassing rates are calculated using the MATLAB script `outgassing.m`. This scr
 
 The folder `OG_data/SPIE_paper_data/` contains the output files for the two experimental runs for the WAAM samples. The script `plot_outgassing.m` can be used to recreate the plot shown in the SPIE paper. It also displays the average outgassing rate at 1hr and 10hrs for each sample.
 
+## File Naming Convention
+
+Filenames should be in the following format:
+
+YYYYMMDD_HHMMSS_sample-info_operator.txt
+
+where sample info is any information about the specific measurement and operator is the operator intials. Sample info should be in the following format:
+
+MATERIAL-ID-GEOMETRY-OTHER
+
+For a reference measurement sample info can simply be:
+
+REF
+
+Examples:
+
+20240117_132130_REF_CB.txt
+
+20240221_090415_SICAPRINT-02-LATTICE_CB.txt
 
