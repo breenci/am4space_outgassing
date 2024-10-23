@@ -2,10 +2,10 @@
 clear variables
 close all
 %% Load the data
-path_to_data = "../OG_data/analysis_code_test_data/";
+path_to_data = "../project_sharepoint/Data/raw/2024/OG_rig_verification_30092024/";
 
-bg_fn = "20240219_094406_REF_CB"; % background measurement
-sample_fn = "20240220_090720_SICAPRINT-01-LATTICE_CB"; % sample measurement
+bg_fn = "20241003_151956_REF_CB"; % background measurement
+sample_fn = "20241001_114949_SICAPRINT-01-LATTICE_CB.txt"; % sample measurement
 
 % load data from file
 bg = import_OG_file(strcat(path_to_data, bg_fn));
@@ -34,13 +34,13 @@ nexttile
 plot(sample.Datetime, sample.T1)
 hold on
 plot(sample.Datetime, sample.T2)
-plot(sample.Datetime, sample.T3)
-plot(sample.Datetime, sample.T4)
-plot(sample.Datetime, sample.T5)
+% plot(sample.Datetime, sample.T3)
+% plot(sample.Datetime, sample.T4)
+% plot(sample.Datetime, sample.T5)
 plot(sample.Datetime, sample.T6)
-plot(sample.Datetime, sample.T7)
-plot(sample.Datetime, sample.T8)
-plot(sample.Datetime, sample.T9)
+% plot(sample.Datetime, sample.T7)
+% plot(sample.Datetime, sample.T8)
+% plot(sample.Datetime, sample.T9)
 hold off
 grid on
 ylabel("Temperature (\circC)")
@@ -72,6 +72,7 @@ max_idx = floor(max_t/mean_diff);
 % trim to region of interest (ROI)
 sample_ROI = sample.CH2(start_CH3:start_CH3+max_idx);
 ref_ROI = sample.CH3(start_CH3:start_CH3+max_idx);
+central_ROI = sample.CH1(start_CH3:start_CH3+max_idx);
 dur_ROI = sample_dur(start_CH3:start_CH3+max_idx) - sample_dur(start_CH3);
 
 % mbar to Pa
@@ -93,11 +94,14 @@ xlabel("Datetime")
 ylim([1e-4, 1e-1])
 
 %% Conductance Calculation
-% get temperature
-% starts at 5 as T1 is controller temp sensor
-T_ROI = sample(start_CH3:start_CH3+max_idx,5:12);
+% % get temperature
+% % starts at 5 as T1 is controller temp sensor
+T_ROI = sample(start_CH3:start_CH3+max_idx,6:13);
 % add 270 for kelvin - a vector the same size as time
 mean_T_test = mean(table2array(T_ROI), 2) + 270;
+% T_sample = sample(start_CH3:start_CH3+max_idx,)
+T_sample = T_ROI.T2 + 270;
+T_bg = T_ROI.T6 + 270;
 
 % define constants
 orf_d = 0.75e-3; % orifice diameter (m)
@@ -106,6 +110,8 @@ M = 0.02896; % Mean molecular mass (kg / mol) (dry air for now)
 R = 8.3145; % Gas constant (J / K * mol)
 
 C = concalc_rough(orf_d, orf_t, mean_T_test, M, R); % conductance calc
+C_sample = concalc_rough(orf_d, orf_t, T_sample, M, R);
+C_bg = concalc_rough(orf_d, orf_t, T_bg, M, R);
 %% Background Correction
 % load background and convert to pascal
 % TODO: Trim this data
@@ -149,7 +155,8 @@ title('background correction fitting')
 % surface area
 % TODO: Library of Areas
 A = 18054.0 * 1e-6;
-q = C.*(sample_ROI - corr_ref)/A;
+% q = C.*(sample_ROI - corr_ref)/A;
+q = (C_sample.*(sample_ROI-central_ROI) - C_bg.*(corr_ref-central_ROI))/A;
 
 % outgassing rates at 1hr and 10hrs
 [~, idx_1hr] = min(abs(dur_ROI - hours(1)));
@@ -178,8 +185,8 @@ ylim([0, 1e-5])
 grid on
 hold off
 %% create the ouput file
-output_struct = struct("q", q, "sample", sample_info.sample, ...
-    "sample_fn", sample_fn, "reference_fn", bg_fn);
+output_struct = struct("q", q, "q1", q_1hr, "q10", q_10hr, "sample", ... 
+    sample_info.sample, "sample_fn", sample_fn, "reference_fn", bg_fn);
 
-path_to_output = "../dproject_sharepoint/Data/processed/analysis_testing/";
-% save(strcat(path_to_output, sample_fn, "_OGR.mat"))
+path_to_output = "../processed_data/outgassing_rates/rig_verification/";
+save(strcat(path_to_output, sample_fn, "_OGR.mat"), "-struct", "output_struct")
